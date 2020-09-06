@@ -1,0 +1,128 @@
+
+---
+title: "R Notebook"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+**Principles of Data Visualization and Introduction to ggplot2**
+
+I have provided you with data about the 5,000 fastest growing companies in the US, as compiled by Inc. magazine. lets read this in:
+
+```{r}
+
+inc <- read.csv("https://raw.githubusercontent.com/charleyferrari/CUNY_DATA_608/master/module1/Data/inc5000_data.csv", header= TRUE)
+
+```
+
+And lets preview this data:
+
+```{r}
+
+head(inc)
+
+```
+
+```{r}
+
+summary(inc)
+
+```
+
+Think a bit on what these summaries mean. Use the space below to add some more relevant non-visual exploratory information you think helps you understand this data:
+
+```{r}
+
+# Insert your code here, create more chunks as necessary
+
+# There are numerous R functions that provide descriptive & exploratory statistics, such as functions in sapply() or describe() in the Hmisc package.
+
+library(Hmisc)
+describe(inc)
+
+```
+
+## Question 1
+
+Create a graph that shows the distribution of companies in the dataset by State (ie how many are in each state). There are a lot of States, so consider which axis you should use. This visualization is ultimately going to be consumed on a 'portrait' oriented screen (ie taller than wide), which should further guide your layout choices.
+
+```{r}
+
+# Answer Question 1 here
+# To represent the distribution of companies by state, I used histogram to represent the number of counts for each state in the dataset.
+library(ggplot2)
+ggplot(inc, aes(x=State)) + geom_histogram(stat = "count", width = 1) + 
+    ggtitle("Number of Campanies by State") +
+    xlab("State") + ylab("# of Companies") +
+    coord_flip()
+
+```
+
+## Quesiton 2
+
+Lets dig in on the state with the 3rd most companies in the data set. Imagine you work for the state and are interested in how many people are employed by companies in different industries. Create a plot that shows the average and/or median employment by industry for companies in this state (only use cases with full data, use R's `complete.cases()` function.) In addition to this, your graph should show how variable the ranges are, and you should deal with outliers.
+
+```{r}
+
+# Answer Question 2 here
+
+library(dplyr)
+# From the summary() function in the previous section, we can see that the state with the thrid most companies is NY.
+# Apply complete.cases() function.
+
+inc_complete <- inc[complete.cases(inc),]
+
+# Prepare dataset.
+NY <- filter(inc_complete, State == "NY")
+#head(NY)
+
+# Create box plot WITH outliers for initial data exploration.
+chart_initial <- ggplot(NY, aes(Industry, Employees)) + geom_boxplot() + coord_flip()
+chart_initial
+
+# Find and remove outliers - remove the two biggest outliers based on the original plot.
+
+new_NY <- subset(NY, Employees < 10000)
+
+# Apply log transformation to further normalize the data.
+chart_log_transformed <- ggplot(new_NY, aes(Industry, Employees)) + 
+    geom_boxplot() + 
+    scale_y_log10() + 
+    coord_flip() 
+
+chart_log_transformed
+
+
+```
+
+## Question 3
+
+Now imagine you work for an investor and want to see which industries generate the most revenue per employee. Create a chart that makes this information clear. Once again, the distribution per industry should be shown.
+
+```{r}
+
+# Answer Question 3 here
+# Plot boxplot.
+ggplot(inc_complete, aes(Industry, Revenue/Employees)) + 
+    geom_boxplot() + 
+    scale_y_log10() +
+    coord_flip() 
+
+# The boxplot looks chaotic and does not show any trend without extensive data cleaning. I decided to use bars to present the averaged revenue per emplpyee by inustry.
+
+# Add new column to dataframe.
+RevenuePerEmployee = inc_complete$Revenue / inc_complete$Employees
+inc_complete <- cbind(inc_complete, RevenuePerEmployee)
+
+# Create bar charts for revenue per employee by industry.
+ggplot(inc_complete, aes(x=Industry, y=RevenuePerEmployee)) + 
+    stat_summary(fun.y="mean", geom="bar")+
+    xlab("Industry") + ylab("Average Revenue per Employee") + coord_flip()
+
+# The bar chart shows a much clearer trend, with the Energy industry generating the most revenue per employee, followed by Computer Hardware, then Lofistics & Transportation.  
+```
+
+
+
